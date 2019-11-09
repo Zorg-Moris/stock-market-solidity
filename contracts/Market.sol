@@ -1,81 +1,58 @@
 pragma solidity >=0.4.21 < 0.7.0;
+import "./../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
 import "./../node_modules/@openzeppelin/contracts/ownership/Ownable.sol";
 import "./../node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "./../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
 import "./Traiders.sol";
+import './Token.sol';
 
-contract Market is Traiders, Ownable, ERC20 {
+contract Market is Traiders,Ownable, ERC20 {
 
      using SafeMath for uint256;
      using SafeMath for uint32;
      using SafeMath for uint16;
 
-     event NewShare(string name);
-     event TransferShare(address _from, address _to, string _nameShare);
+     event NewToken(string name);
+     event TransferToken(address _from, address _to, string _nameToken);
 
-     struct Share {
-        string name;
-        string descriptionShare;
-        uint priceShare;
-        uint totalCountShares;
-        uint availableQuantityShares;
-     }
-
-     Share[] public shares;
-     mapping(string => uint) public indexShareArray;
+     mapping(string => Token) public tokenMap;
      
-     modifier getShareInfo(string memory _nameShare) {
-       require(address(indexShareArray[_nameShare]) != address(0), "Market INFO: Information not found");
+     modifier getTokenInfo(string memory _nameToken) {
+       require(address(tokenMap[_nameToken]) != address(0), "Market INFO: Information not found");
      _;
     }
 
-     function createShareMarket(string memory _name, string memory _description) public {
-         uint index = shares.push(Share(_name, _description, 1, 100, 0)) - 1;
-         indexShareArray[_name] = index;
-         emit NewShare(_name);
+    function createTokenMarket(string memory _name, string memory _description,uint256 _price, uint256 _totalToken) public {
+        Token token = new Token(_name, _description, _price, _totalToken);
+        tokenMap[_name] = token;
+        traiderCountToken[msg.sender][_name] = traiderCountToken[msg.sender][_name].add(_totalToken);
+        emit NewToken(_name);
      }
 
-    function getPrice(string memory _name) public view getShareInfo(_name) returns(uint) {
-      uint index = indexShareArray[_name];
-      return shares[index].priceShare;
+    function getPrice(string memory _name) public view getTokenInfo(_name) returns(uint256) {
+         return tokenMap[_name].tokenPrice();
      }
 
-    function getDescriptionShare(string memory _name) public view getShareInfo(_name) returns (string memory) {
-      uint index = indexShareArray[_name];
-      return shares[index].descriptionShare;
+    function getDescriptionToken(string memory _name) public view getTokenInfo(_name) returns (string memory) {
+      return tokenMap[_name].description();
      }
 
-    function getAvailableQuantityShares(string memory _name) public view getShareInfo(_name) returns(uint) {
-      uint index = indexShareArray[_name];
-      return shares[index].availableQuantityShares;
+    // function getAvailableQuantityToken(string memory _name) public view getTokenInfo(_name) returns(uint256) {
+    //   return tokenMap[_name].availableQuantityToken();
+    //  }
+
+     function traiderBuyToken(string memory _nameToken, uint256 _countToken) public payable {
+        // require(getAvailableQuantityToken(_nameToken)>=_countToken, "ERROR: the number of shares does not match the declared");
+        require(getPrice(_nameToken).mul(_countToken) <= balanceOf(msg.sender), "ERROR: the number of shares does not match the declared");
+        require(transferFrom(address(this), msg.sender, _countToken), "Market: transaction error");
+        uint totalPrice = getPrice(_nameToken).mul(_countToken);
+        require(transfer(address(this), totalPrice),"Market: transaction error");
+        traiderCountToken[msg.sender][_nameToken] = traiderCountToken[msg.sender][_nameToken].add(_countToken);
      }
 
-    function _transferShareToTraider(string memory _nameShare, uint countShare) private {
-        uint index = indexShareArray[_nameShare];
-        shares[index].availableQuantityShares = shares[index].availableQuantityShares.sub(countShare);
-        traiderCountShare[msg.sender][_nameShare] = traiderCountShare[msg.sender][_nameShare].add(countShare);
-        emit TransferShare(address (this), msg.sender,_nameShare);
-    }
-
-    function _transferShareFromTraider(string memory _nameShare, uint countShare) private {
-        uint index = indexShareArray[_nameShare];
-        shares[index].availableQuantityShares = shares[index].availableQuantityShares.add(countShare);
-        traiderCountShare[msg.sender][_nameShare] = traiderCountShare[msg.sender][_nameShare].sub(countShare);
-        emit TransferShare(msg.sender, address (this),_nameShare);
-     }
-
-     function traiderBuyShare(string memory _nameShare, uint _countShare) public payable {
-        require(getAvailableQuantityShares(_nameShare)>=_countShare, "ERROR: the number of shares does not match the declared");
-        require(getPrice(_nameShare).mul(_countShare) <= balanceOf(msg.sender), "ERROR: the number of shares does not match the declared");
-        uint totalPrice = getPrice(_nameShare).mul(_countShare);
-        transfer(address(this), totalPrice);
-        _transferShareToTraider(_nameShare, _countShare);
-     }
-
-     function traiderSellShare(string memory _nameShare, uint _countShare) public payable {
-        require(traiderCountShare[msg.sender][_nameShare] >= _countShare, "ERROR: the number of shares does not match the declared");
-        uint totalPrice = getPrice(_nameShare).mul(_countShare);
+     function traiderSellToken(string memory _nameToken, uint _countToken) public payable {
+        require(traiderCountToken[msg.sender][_nameToken] >= _countToken, "ERROR: the number of shares does not match the declared");
+        traiderCountToken[msg.sender][_nameToken] = traiderCountToken[msg.sender][_nameToken].sub(_countToken);
+        uint totalPrice = getPrice(_nameToken).mul(_countToken);
         transfer(msg.sender, totalPrice);
-        _transferShareFromTraider(_nameShare, _countShare);
      }
 }
