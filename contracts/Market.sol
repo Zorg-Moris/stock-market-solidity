@@ -2,10 +2,9 @@ pragma solidity >=0.4.21 < 0.7.0;
 import "./../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
 import "./../node_modules/@openzeppelin/contracts/ownership/Ownable.sol";
 import "./../node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "./Traiders.sol";
 import './Token.sol';
 
-contract Market is Traiders,Ownable, ERC20 {
+contract Market is Ownable, ERC20 {
 
      using SafeMath for uint256;
      using SafeMath for uint32;
@@ -15,7 +14,8 @@ contract Market is Traiders,Ownable, ERC20 {
      event TransferToken(address _from, address _to, string _nameToken);
 
      mapping(string => Token) public tokenMap;
-     
+     mapping(string => uint) private _availableQuantityToken;
+     mapping (address => mapping(string => uint)) public traiderCountToken;
      modifier getTokenInfo(string memory _nameToken) {
        require(address(tokenMap[_nameToken]) != address(0), "Market INFO: Information not found");
      _;
@@ -36,23 +36,37 @@ contract Market is Traiders,Ownable, ERC20 {
       return tokenMap[_name].description();
      }
 
-    // function getAvailableQuantityToken(string memory _name) public view getTokenInfo(_name) returns(uint256) {
-    //   return tokenMap[_name].availableQuantityToken();
-    //  }
+    function getAvailableQuantityToken(string memory _name) public view getTokenInfo(_name) returns(uint256) {
+      return _availableQuantityToken[_name];
+     }
+
+      function addAvailableQuantityToken(string memory _name, uint _countToken) internal {
+       _availableQuantityToken[_name] = _availableQuantityToken[_name].add(_countToken);
+     }
+
+      function subAvailableQuantityToken(string memory _name, uint _countToken) internal {
+       _availableQuantityToken[_name] = _availableQuantityToken[_name].sub(_countToken);
+     }
 
      function traiderBuyToken(string memory _nameToken, uint256 _countToken) public payable {
-        // require(getAvailableQuantityToken(_nameToken)>=_countToken, "ERROR: the number of shares does not match the declared");
-        require(getPrice(_nameToken).mul(_countToken) <= balanceOf(msg.sender), "ERROR: the number of shares does not match the declared");
-        require(transferFrom(address(this), msg.sender, _countToken), "Market: transaction error");
+        require(getAvailableQuantityToken(_nameToken)>=_countToken, "ERROR: the number of Token does not match the declared");
+        require(getPrice(_nameToken).mul(_countToken) <= balanceOf(msg.sender), "ERROR: the number of Token does not match the declared");
+      //   require(transferFrom(address(this), msg.sender, _countToken), "Market: transaction error");
+        require(tokenMap[_nameToken].transfer(msg.sender, _countToken),"Market: transaction error");
         uint totalPrice = getPrice(_nameToken).mul(_countToken);
-        require(transfer(address(this), totalPrice),"Market: transaction error");
+      //   require(transfer(address(this), totalPrice),"Market: transaction error");
+        msg.sender.transfer(totalPrice);
+        subAvailableQuantityToken(_nameToken, _countToken);
         traiderCountToken[msg.sender][_nameToken] = traiderCountToken[msg.sender][_nameToken].add(_countToken);
      }
 
      function traiderSellToken(string memory _nameToken, uint _countToken) public payable {
-        require(traiderCountToken[msg.sender][_nameToken] >= _countToken, "ERROR: the number of shares does not match the declared");
+        require(traiderCountToken[msg.sender][_nameToken] >= _countToken, "ERROR: the number of sharesToken does not match the declared");
         traiderCountToken[msg.sender][_nameToken] = traiderCountToken[msg.sender][_nameToken].sub(_countToken);
         uint totalPrice = getPrice(_nameToken).mul(_countToken);
+        require(tokenMap[_nameToken].transferFrom(msg.sender, address(this), _countToken), "Market: transaction error");
+       //   require(transferFrom(msg.sender, address(this), _countToken), "Market: transaction error");
+       addAvailableQuantityToken(_nameToken, _countToken);
         transfer(msg.sender, totalPrice);
      }
 }
