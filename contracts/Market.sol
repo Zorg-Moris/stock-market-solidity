@@ -15,7 +15,7 @@ contract Market is Ownable, ERC20 {
 
      mapping(string => Token) public tokenMap;
      mapping(string => uint) private _availableQuantityToken;
-     mapping (address => mapping(string => uint)) public traiderCountToken;
+     
      modifier getTokenInfo(string memory _nameToken) {
        require(address(tokenMap[_nameToken]) != address(0), "Market INFO: Information not found");
      _;
@@ -24,7 +24,6 @@ contract Market is Ownable, ERC20 {
     function createTokenMarket(string memory _name, string memory _description,uint256 _price, uint256 _totalToken) public {
         Token token = new Token(_name, _description, _price, _totalToken);
         tokenMap[_name] = token;
-        traiderCountToken[msg.sender][_name] = traiderCountToken[msg.sender][_name].add(_totalToken);
         emit NewToken(_name);
      }
 
@@ -57,12 +56,10 @@ contract Market is Ownable, ERC20 {
       //   require(transfer(address(this), totalPrice),"Market: transaction error");
         msg.sender.transfer(totalPrice);
         subAvailableQuantityToken(_nameToken, _countToken);
-        traiderCountToken[msg.sender][_nameToken] = traiderCountToken[msg.sender][_nameToken].add(_countToken);
      }
 
      function traiderSellToken(string memory _nameToken, uint _countToken) public payable {
-        require(traiderCountToken[msg.sender][_nameToken] >= _countToken, "ERROR: the number of sharesToken does not match the declared");
-        traiderCountToken[msg.sender][_nameToken] = traiderCountToken[msg.sender][_nameToken].sub(_countToken);
+        require(balanceOf(msg.sender) >= _countToken, "ERROR: the number of sharesToken does not match the declared");
         uint totalPrice = getPrice(_nameToken).mul(_countToken);
         require(tokenMap[_nameToken].transferFrom(msg.sender, address(this), _countToken), "Market: transaction error");
        //   require(transferFrom(msg.sender, address(this), _countToken), "Market: transaction error");
