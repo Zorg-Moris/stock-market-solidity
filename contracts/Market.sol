@@ -1,69 +1,77 @@
 pragma solidity >=0.4.21 < 0.7.0;
+
 import "./../node_modules/@openzeppelin/contracts/math/SafeMath.sol";
 import "./../node_modules/@openzeppelin/contracts/ownership/Ownable.sol";
 import "./../node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import './Token.sol';
+import './Project.sol';
 
-contract Market is Ownable, ERC20 {
-
+contract Market is ERC20 {
      using SafeMath for uint256;
      using SafeMath for uint32;
      using SafeMath for uint16;
 
-     event NewToken(string name);
-     event TransferToken(address _from, address _to, string _nameToken);
+     event NewProject(string name);
+     event TransferProject(
+          address _from,
+          address _to,
+          string _nameProject
+      );
 
-     mapping(string => Token) public tokenMap;
-     mapping(string => uint) private _availableQuantityToken;
+     mapping(string => Project) public projectMap;
+     mapping(string => uint) private _availableQuantityProject;
      
-     modifier getTokenInfo(string memory _nameToken) {
-       require(address(tokenMap[_nameToken]) != address(0), "Market INFO: Information not found");
-     _;
+     modifier checkTokenMarket(string memory _nameProject) {
+       require(address(projectMap[_nameProject]) != address(0), "Market INFO: Information not found");
+       _;
     }
 
-    function createTokenMarket(string memory _name, string memory _description,uint256 _price, uint256 _totalToken) public {
-        Token token = new Token(_name, _description, _price, _totalToken);
-        tokenMap[_name] = token;
-        emit NewToken(_name);
+    function createTokenMarket(
+        string memory _name,
+        string memory _description,
+        uint256 _price,
+        uint256 _totalProject
+   )
+      public
+    {
+        Project project = new Project(_name, _description, _price, _totalProject);
+        projectMap[_name] = project;
+        emit NewProject(_name);
+    }
+
+    function getPrice(string memory _name) public view checkTokenMarket(_name) returns(uint256) {
+        return projectMap[_name].tokenPrice();
      }
 
-    function getPrice(string memory _name) public view getTokenInfo(_name) returns(uint256) {
-         return tokenMap[_name].tokenPrice();
+    function getDescriptionProject(string memory _name) public view checkTokenMarket(_name) returns (string memory) {
+        return projectMap[_name].description();
      }
 
-    function getDescriptionToken(string memory _name) public view getTokenInfo(_name) returns (string memory) {
-      return tokenMap[_name].description();
+    function getAvailableQuantityProject(string memory _name) public view checkTokenMarket(_name) returns(uint256) {
+        return _availableQuantityProject[_name];
      }
 
-    function getAvailableQuantityToken(string memory _name) public view getTokenInfo(_name) returns(uint256) {
-      return _availableQuantityToken[_name];
-     }
-
-      function addAvailableQuantityToken(string memory _name, uint _countToken) internal {
-       _availableQuantityToken[_name] = _availableQuantityToken[_name].add(_countToken);
-     }
-
-      function subAvailableQuantityToken(string memory _name, uint _countToken) internal {
-       _availableQuantityToken[_name] = _availableQuantityToken[_name].sub(_countToken);
-     }
-
-     function traiderBuyToken(string memory _nameToken, uint256 _countToken) public payable {
-        require(getAvailableQuantityToken(_nameToken)>=_countToken, "ERROR: the number of Token does not match the declared");
+    function traiderBuyToken(string memory _nameToken, uint256 _countToken) public payable {
+        require(getAvailableQuantityProject(_nameToken)>=_countToken, "ERROR: the number of Token does not match the declared");
         require(getPrice(_nameToken).mul(_countToken) <= balanceOf(msg.sender), "ERROR: the number of Token does not match the declared");
-      //   require(transferFrom(address(this), msg.sender, _countToken), "Market: transaction error");
-        require(tokenMap[_nameToken].transfer(msg.sender, _countToken),"Market: transaction error");
+        require(projectMap[_nameToken].transfer(msg.sender, _countToken),"Market: transaction error");
         uint totalPrice = getPrice(_nameToken).mul(_countToken);
-      //   require(transfer(address(this), totalPrice),"Market: transaction error");
         msg.sender.transfer(totalPrice);
-        subAvailableQuantityToken(_nameToken, _countToken);
+        subAvailableQuantityProject(_nameToken, _countToken);
      }
 
-     function traiderSellToken(string memory _nameToken, uint _countToken) public payable {
+    function traiderSellToken(string memory _nameToken, uint _countToken) public payable {
         require(balanceOf(msg.sender) >= _countToken, "ERROR: the number of sharesToken does not match the declared");
         uint totalPrice = getPrice(_nameToken).mul(_countToken);
-        require(tokenMap[_nameToken].transferFrom(msg.sender, address(this), _countToken), "Market: transaction error");
-       //   require(transferFrom(msg.sender, address(this), _countToken), "Market: transaction error");
-       addAvailableQuantityToken(_nameToken, _countToken);
+        require(projectMap[_nameToken].transferFrom(msg.sender, address(this), _countToken), "Market: transaction error");
+        addAvailableQuantityProject(_nameToken, _countToken);
         transfer(msg.sender, totalPrice);
+     }
+
+    function addAvailableQuantityProject(string memory _name, uint _countToken) internal {
+        _availableQuantityProject[_name] = _availableQuantityProject[_name].add(_countToken);
+     }
+
+    function subAvailableQuantityProject(string memory _name, uint _countToken) internal {
+        _availableQuantityProject[_name] = _availableQuantityProject[_name].sub(_countToken);
      }
 }
