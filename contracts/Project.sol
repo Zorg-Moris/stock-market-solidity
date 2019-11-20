@@ -1,7 +1,7 @@
 pragma solidity >=0.4.21 < 0.7.0;
 
-import "./../node_modules/@openzeppelin/contracts/ownership/Ownable.sol";
-import "./../node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract Project is ERC20 {
     string public tokenName;

@@ -40,15 +40,15 @@ contract Market is ERC20 {
 
     function getPrice(string memory _name) public view checkTokenMarket(_name) returns(uint256) {
         return projectMap[_name].tokenPrice();
-     }
+    }
 
     function getDescriptionProject(string memory _name) public view checkTokenMarket(_name) returns (string memory) {
         return projectMap[_name].description();
-     }
+    }
 
     function getAvailableQuantityProject(string memory _name) public view checkTokenMarket(_name) returns(uint256) {
         return _availableQuantityProject[_name];
-     }
+    }
 
     function traiderBuyToken(string memory _nameToken, uint256 _countToken) public payable {
         require(getAvailableQuantityProject(_nameToken)>=_countToken, "ERROR: the number of Token does not match the declared");
@@ -57,7 +57,7 @@ contract Market is ERC20 {
         uint totalPrice = getPrice(_nameToken).mul(_countToken);
         msg.sender.transfer(totalPrice);
         subAvailableQuantityProject(_nameToken, _countToken);
-     }
+    }
 
     function traiderSellToken(string memory _nameToken, uint _countToken) public payable {
         require(balanceOf(msg.sender) >= _countToken, "ERROR: the number of sharesToken does not match the declared");
@@ -65,13 +65,13 @@ contract Market is ERC20 {
         require(projectMap[_nameToken].transferFrom(msg.sender, address(this), _countToken), "Market: transaction error");
         addAvailableQuantityProject(_nameToken, _countToken);
         transfer(msg.sender, totalPrice);
-     }
+    }
 
     function addAvailableQuantityProject(string memory _name, uint _countToken) internal {
         _availableQuantityProject[_name] = _availableQuantityProject[_name].add(_countToken);
-     }
+    }
 
     function subAvailableQuantityProject(string memory _name, uint _countToken) internal {
         _availableQuantityProject[_name] = _availableQuantityProject[_name].sub(_countToken);
-     }
+    }
 }
