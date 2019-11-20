@@ -15,7 +15,7 @@ contract Market is ERC20 {
           address _from,
           address _to,
           string _nameProject
-      );
+    );
 
      mapping(string => Project) public projectMap;
      mapping(string => uint) private _availableQuantityProject;
