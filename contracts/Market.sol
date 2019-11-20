@@ -30,7 +30,7 @@ contract Market is ERC20 {
         string memory _description,
         uint256 _price,
         uint256 _totalProject
-   )
+    )
       public
     {
         Project project = new Project(_name, _description, _price, _totalProject);
