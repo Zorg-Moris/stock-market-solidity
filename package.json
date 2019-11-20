@@ -1,0 +1,23 @@
+{
+  "name": "stock-market-solidity",
+  "version": "1.0.0",
+  "description": "solidity Project",
+  "main": "truffle-config.js",
+  "dependencies": {
+    "@openzeppelin/contracts": "^2.4.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Zorg-Moris/stock-market-solidity.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Zorg-Moris/stock-market-solidity/issues"
+  },
+  "homepage": "https://github.com/Zorg-Moris/stock-market-solidity#readme"
+}
